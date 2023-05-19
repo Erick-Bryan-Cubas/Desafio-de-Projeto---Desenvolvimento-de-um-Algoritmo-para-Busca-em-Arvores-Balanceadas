@@ -1,112 +1,107 @@
 #include <iostream>
+#include <algorithm>
 
-using namespace std;
+class Node {
+public:
+    int key;
+    int height;
+    Node* left;
+    Node* right;
 
-struct Node {
-  int data;
-  Node* left;
-  Node* right;
+    Node(int key) : key(key), height(1), left(nullptr), right(nullptr) {}
 };
 
-Node* newNode(int data) {
-  Node* node = new Node();
-  node->data = data;
-  node->left = nullptr;
-  node->right = nullptr;
-  return node;
-}
+class AVLTree {
+public:
+    Node* root;
 
-bool isBalanced(Node* node) {
-  if (node == nullptr) {
-    return true;
-  }
+    AVLTree() : root(nullptr) {}
 
-  int leftHeight = getHeight(node->left);
-  int rightHeight = getHeight(node->right);
-
-  return abs(leftHeight - rightHeight) <= 1;
-}
-
-int getHeight(Node* node) {
-  if (node == nullptr) {
-    return 0;
-  }
-
-  return 1 + max(getHeight(node->left), getHeight(node->right));
-}
-
-void rotateLeft(Node*& node) {
-  Node* rightChild = node->right;
-  node->right = rightChild->left;
-  rightChild->left = node;
-
-  node = rightChild;
-}
-
-void rotateRight(Node*& node) {
-  Node* leftChild = node->left;
-  node->left = leftChild->right;
-  leftChild->right = node;
-
-  node = leftChild;
-}
-
-void balance(Node*& node) {
-  if (!isBalanced(node)) {
-    if (getHeight(node->left) > getHeight(node->right)) {
-      if (getHeight(node->left->left) > getHeight(node->left->right)) {
-        rotateRight(node);
-      } else {
-        rotateLeft(node->left);
-        rotateRight(node);
-      }
-    } else {
-      if (getHeight(node->right->right) > getHeight(node->right->left)) {
-        rotateLeft(node);
-      } else {
-        rotateRight(node->right);
-        rotateLeft(node);
-      }
-    }
-  }
-}
-
-void insert(Node*& root, int data) {
-  if (root == nullptr) {
-    root = newNode(data);
-  } else {
-    if (data < root->data) {
-      insert(root->left, data);
-    } else {
-      insert(root->right, data);
+    int height(Node* node) {
+        return node ? node->height : 0;
     }
 
-    balance(root);
-  }
-}
+    int balanceFactor(Node* node) {
+        return height(node->right) - height(node->left);
+    }
 
-void inorder(Node* root) {
-  if (root != nullptr) {
-    inorder(root->left);
-    cout << root->data << " ";
-    inorder(root->right);
-  }
-}
+    void fixHeight(Node* node) {
+        node->height = std::max(height(node->left), height(node->right)) + 1;
+    }
+
+    Node* rotateLeft(Node* q) {
+        Node* p = q->right;
+        q->right = p->left;
+        p->left = q;
+        fixHeight(q);
+        fixHeight(p);
+        return p;
+    }
+
+    Node* rotateRight(Node* p) {
+        Node* q = p->left;
+        p->left = q->right;
+        q->right = p;
+        fixHeight(p);
+        fixHeight(q);
+        return q;
+    }
+
+    Node* balance(Node* node) {
+        fixHeight(node);
+        if (balanceFactor(node) == 2) {
+            if (balanceFactor(node->right) < 0) {
+                node->right = rotateRight(node->right);
+            }
+            return rotateLeft(node);
+        }
+        if (balanceFactor(node) == -2) {
+            if (balanceFactor(node->left) > 0) {
+                node->left = rotateLeft(node->left);
+            }
+            return rotateRight(node);
+        }
+        return node;
+    }
+
+    Node* insert(Node* node, int key) {
+        if (!node) return new Node(key);
+        if (key < node->key) {
+            node->left = insert(node->left, key);
+        } else {
+            node->right = insert(node->right, key);
+        }
+        return balance(node);
+    }
+
+    void insert(int key) {
+        root = insert(root, key);
+    }
+
+    void inorder(Node* node) {
+        if (!node) return;
+        inorder(node->left);
+        std::cout << node->key << " ";
+        inorder(node->right);
+    }
+
+    void inorder() {
+        inorder(root);
+        std::cout << std::endl;
+    }
+};
 
 int main() {
-  Node* root = nullptr;
+    AVLTree tree;
+    tree.insert(10);
+    tree.insert(20);
+    tree.insert(30);
+    tree.insert(40);
+    tree.insert(50);
+    tree.insert(25);
 
-  insert(root, 10);
-  insert(root, 5);
-  insert(root, 15);
-  insert(root, 2);
-  insert(root, 7);
-  insert(root, 12);
-  insert(root, 17);
+    std::cout << "In-order traversal of the constructed AVL tree is: ";
+    tree.inorder();
 
-  cout << "Inorder traversal of the balanced tree: ";
-  inorder(root);
-  cout << endl;
-
-  return 0;
+    return 0;
 }
